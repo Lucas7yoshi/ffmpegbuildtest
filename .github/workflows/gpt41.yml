@@ -1,0 +1,65 @@
+name: Build FFmpeg (GPL, Free Codecs)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-ffmpeg:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autoconf automake build-essential cmake git libtool pkg-config \
+            texinfo wget yasm nasm libx264-dev libx265-dev libass-dev
+
+      - name: Clone FFmpeg
+        run: |
+          git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg
+          cd ffmpeg
+          git checkout release/6.1
+
+      - name: Configure FFmpeg (GPL, free codecs)
+        run: |
+          cd ffmpeg
+          ./configure \
+            --prefix="$HOME/ffmpeg_build" \
+            --pkg-config-flags="--static" \
+            --extra-cflags="-I$HOME/ffmpeg_build/include" \
+            --extra-ldflags="-L$HOME/ffmpeg_build/lib" \
+            --extra-libs="-lpthread -lm" \
+            --enable-gpl \
+            --enable-libx264 \
+            --enable-libx265 \
+            --enable-libass \
+            --enable-nonfree \
+            --disable-debug \
+            --disable-doc \
+            --disable-static \
+            --enable-shared
+
+      - name: Build FFmpeg
+        run: |
+          cd ffmpeg
+          make -j$(nproc)
+          make install
+
+      - name: Archive FFmpeg binaries
+        run: |
+          mkdir -p ffmpeg-artifacts
+          cp $HOME/ffmpeg_build/bin/ffmpeg ffmpeg-artifacts/
+          cp $HOME/ffmpeg_build/bin/ffprobe ffmpeg-artifacts/
+
+      - name: Upload FFmpeg binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-binaries
+          path: ffmpeg-artifacts/
