@@ -19,7 +19,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             autoconf automake build-essential cmake git libtool pkg-config \
-            texinfo wget yasm nasm libx264-dev libx265-dev libass-dev
+            texinfo wget yasm nasm libx264-dev libx265-dev libass-dev libnuma-dev
 
       - name: Clone FFmpeg
         run: |
@@ -35,7 +35,7 @@ jobs:
             --pkg-config-flags="--static" \
             --extra-cflags="-I$HOME/ffmpeg_build/include" \
             --extra-ldflags="-L$HOME/ffmpeg_build/lib" \
-            --extra-libs="-lpthread -lm" \
+            --extra-libs="-lpthread -lm -lx265" \
             --enable-gpl \
             --enable-libx264 \
             --enable-libx265 \
