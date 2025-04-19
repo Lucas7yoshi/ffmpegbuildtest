@@ -1,0 +1,41 @@
+name: FFMPEG Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-ffmpeg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autoconf automake build-essential cmake git libass-dev libfreetype6-dev \
+            libtool pkg-config texinfo wget yasm libx264-dev libx265-dev
+
+      - name: Get FFmpeg source
+        run: |
+          git clone https://github.com/FFmpeg/FFmpeg.git ffmpeg
+          cd ffmpeg
+
+      - name: Configure and build FFmpeg
+        run: |
+          cd ffmpeg
+          ./configure \
+            --enable-gpl \
+            --enable-libx264 \
+            --enable-libx265 \
+            --enable-libass \
+            --enable-nonfree
+          make -j$(nproc)
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ffmpeg-build
+          path: ffmpeg
