@@ -9,17 +9,29 @@ on:
 jobs:
   build-ffmpeg:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [linux, windows]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install dependencies (Linux)
+        if: matrix.target == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             autoconf automake build-essential cmake git libtool pkg-config \
             texinfo wget yasm nasm libx264-dev libx265-dev libass-dev libnuma-dev
+
+      - name: Install dependencies (Windows)
+        if: matrix.target == 'windows'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autoconf automake build-essential cmake git libtool pkg-config \
+            texinfo wget yasm nasm mingw-w64
 
       - name: Clone FFmpeg
         run: |
@@ -27,7 +39,8 @@ jobs:
           cd ffmpeg
           git checkout release/6.1
 
-      - name: Configure FFmpeg (GPL, free codecs)
+      - name: Configure FFmpeg (Linux)
+        if: matrix.target == 'linux'
         run: |
           cd ffmpeg
           ./configure \
@@ -46,20 +59,56 @@ jobs:
             --disable-static \
             --enable-shared
 
+      - name: Configure FFmpeg (Windows)
+        if: matrix.target == 'windows'
+        run: |
+          cd ffmpeg
+          ./configure \
+            --prefix="$HOME/ffmpeg_build_win" \
+            --pkg-config-flags="--static" \
+            --cross-prefix=x86_64-w64-mingw32- \
+            --target-os=mingw32 \
+            --arch=x86_64 \
+            --enable-gpl \
+            --enable-libx264 \
+            --enable-libx265 \
+            --enable-libass \
+            --enable-nonfree \
+            --disable-debug \
+            --disable-doc \
+            --disable-static \
+            --enable-shared
+
       - name: Build FFmpeg
         run: |
           cd ffmpeg
           make -j$(nproc)
           make install
 
-      - name: Archive FFmpeg binaries
+      - name: Archive FFmpeg binaries (Linux)
+        if: matrix.target == 'linux'
         run: |
-          mkdir -p ffmpeg-artifacts
-          cp $HOME/ffmpeg_build/bin/ffmpeg ffmpeg-artifacts/
-          cp $HOME/ffmpeg_build/bin/ffprobe ffmpeg-artifacts/
+          mkdir -p ffmpeg-artifacts-linux
+          cp $HOME/ffmpeg_build/bin/ffmpeg ffmpeg-artifacts-linux/
+          cp $HOME/ffmpeg_build/bin/ffprobe ffmpeg-artifacts-linux/
 
-      - name: Upload FFmpeg binaries
+      - name: Archive FFmpeg binaries (Windows)
+        if: matrix.target == 'windows'
+        run: |
+          mkdir -p ffmpeg-artifacts-windows
+          cp $HOME/ffmpeg_build_win/bin/ffmpeg.exe ffmpeg-artifacts-windows/ || true
+          cp $HOME/ffmpeg_build_win/bin/ffprobe.exe ffmpeg-artifacts-windows/ || true
+
+      - name: Upload FFmpeg binaries (Linux)
+        if: matrix.target == 'linux'
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpeg-binaries
-          path: ffmpeg-artifacts/
+          name: ffmpeg-binaries-linux
+          path: ffmpeg-artifacts-linux/
+
+      - name: Upload FFmpeg binaries (Windows)
+        if: matrix.target == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-binaries-windows
+          path: ffmpeg-artifacts-windows/
