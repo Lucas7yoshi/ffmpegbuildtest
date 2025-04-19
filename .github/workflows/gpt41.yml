@@ -23,7 +23,7 @@ jobs:
 
       - name: Clone FFmpeg
         run: |
-          git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg
+          git clone https://github.com/FFmpeg/FFmpeg.git ffmpeg
           cd ffmpeg
           git checkout release/6.1
 
