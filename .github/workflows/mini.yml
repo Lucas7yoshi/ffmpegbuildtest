@@ -1,0 +1,45 @@
+# chatgpt reasoning with search 
+name: Build Minimal FFmpeg
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            build-essential pkg-config yasm nasm \
+            libnuma-dev libatomic-ops-dev libpthread-stubs0-dev  # core build tools :contentReference[oaicite:0]{index=0}
+      
+      - name: Build libvpx (VP9)
+        run: |
+          git clone --depth 1 https://chromium.googlesource.com/webm/libvpx.git
+          cd libvpx
+          ./configure --prefix="$PWD/ffmpeg_build" \
+                      --disable-examples --disable-unit-tests \
+                      --enable-vp9                           # only VP9 :contentReference[oaicite:1]{index=1}
+          make -j$(nproc) && make install
+
+      - name: Build libx265 (HEVC)
+        run: |
+          git clone --depth 1 https://bitbucket.org/multicoreware/x265_git.git x265
+          cd x265/build/linux
+          cmake -G "Unix Makefiles" \
+                -DCMAKE_INSTALL_PREFIX="$PWD/../../../ffmpeg_build" \
+                -DENABLE_SHARED=off -DENABLE_CLI=off  ../../source   # static lib only :contentReference[oaicite:2]{index=2}
+          make -j$(nproc) && make install
+
+      - name: Build FFmpeg
+        run: |
+          git
+          clone
