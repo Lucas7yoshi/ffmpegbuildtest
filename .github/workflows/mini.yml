@@ -41,5 +41,21 @@ jobs:
 
       - name: Build FFmpeg
         run: |
-          git
-          clone
+          git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg
+          cd ffmpeg
+          PKG_CONFIG_PATH="../ffmpeg_build/lib/pkgconfig" ./configure \
+            --prefix="../ffmpeg_build" \
+            --disable-everything               # disable all defaults :contentReference[oaicite:3]{index=3} \
+            --disable-programs                \
+            --enable-decoder=vp9              \
+            --enable-parser=vp9               \
+            --enable-demuxer=matroska,webm    \
+            --enable-encoder=libx265          \
+            --enable-parser=h265              \
+            --enable-muxer=mp4,mov            \
+            --enable-bsfs=h265_mp4toannexb     \
+            --enable-protocol=file            \
+            --extra-cflags="-I../ffmpeg_build/include" \
+            --extra-ldflags="-L../ffmpeg_build/lib"     # selective features :contentReference[oaicite:4]{index=4}
+          make -j$(nproc)
+          strip --strip-all ffmpeg  
